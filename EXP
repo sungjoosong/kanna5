@@ -1,0 +1,266 @@
+Exploration Project 01
+Classification - Using scikit-learn Library and Toy Datasets
+
+
+EXP_1
+ 1. Iris의 세 가지 품종, 분류해 볼까요?
+  -붓꽃 데이터는 사이킷런(scikit-learn) 에 내장된 데이터이다.
+  scikit-learn은 간단하고 작은 데이터셋인 Toy datasets과 비교적 복잡하고 현실 세계를 반영한 Real world datasets, 두 가지 종류의 데이터셋을 제공합니다.이번에 저희는 이 중 Toy datasets의 iris 데이터셋을 사용할 것입니다. 데이터셋에는 어떤 정보가 담겼을까요?
+  
+  from sklearn.datasets import load_iris
+# sklearn 라이브러리의 datasets 패키지에서 load_iris 함수를 임포트함
+
+iris = load_iris()
+# load_iris 함수는 iris 데이터셋을 로드하는 함수
+# 로드된 iris 데이터셋을 iris라는 변수에 저장
+
+2. iris 정보확인
+
+print(dir(iris))
+# dir()는 객체가 어떤 변수와 메서드를 가지고 있는지 나열함 
+iris에는 어떤 정보들이 담겼을지, keys() 라는 메서드로 확인
+iris에는 data, target, frame, target_names, DESCR, feature_names, filename, data_module 까지 총 8개의 정보가 담겨있다.
+가장 중요한 데이터는 iris_data 변수에 저장한 후, 데이터의 크기를 확인
+(150, 4) 총150개의 데이터가 각각 4개의 정보를 담고 있다.
+샘플로 하나의 데이터만 확인하면
+iris_data[0]
+array([5.1, 3.5, 1.4, 0.2]) 0번 index로 접근해서 확인해 보니, 총 네 개의 숫자가 나옵니다.
+이것은 위에서 말한 꽃잎과 꽃받침의 경우의 수 이다.
+우리는 이것을 가지고 붓꽃의 종류를 가려 내려한다.
+여기서 이렇게 머신러닝 모델이 출력해야 하는 정답을 라벨(label) 또는 타겟(target) 이라고 합니다.
+붓꽃 데이터에서 타겟 정보는 다음과 같이 target으로 볼 수 있다.
+iris_label = iris.target
+# keys에서 확인한 정보 중 target을 따로 iris_label 변수에 저장
+
+print(iris_label.shape)
+iris_label
+# iris_data와 다르게 150개의 숫자만 가지고 있음 (150)
+iris 데이터의 target을 iris_label이라는 변수에 저장해 보았다
+길이와 형태를 확인하니 총 150개의 데이터가 들어있고, 각 값은 0, 1, 또는 2로 나타나는 것을 확인할 수 있다, 
+iris.target_names
+# keys에서 확인한 정보 중 target_names를 변수에 따로 저장하지 않고 호출
+# iris_label이 가진 0,1,2의 이름 확인
+array(['setosa', 'versicolor', 'virginica'], dtype='<U10')
+0 이 setosa,1이 versicolor, 2가 virginica 순서대로 담겨있다
+
+3. 첫 번째 머신러닝 실습, 간단하고도 빠르게! (1) 머신러닝 모델을 학습시키기 위한 문제지와 정답지 준비
+데이터가 준비되었으니 이제 바로 분류하는 머신러닝 모델을 학습시키는 실습을 진행해 보자
+ 2차원 배열 데이터를 다루는 데에 가장 많이 쓰이는 pandas를 활용해서 다뤄 보자
+ import pandas as pd
+# pandas 라이브러리를 pd라는 약칭으로 임포트
+
+print(pd.__version__)
+# pandas의 버전 확인  1.3.3   / 약어로 pd 로 사용
+붓꽃 데이터셋을 pandas가 제공하는 DataFrame 이라는 자료형으로 변환해 보겠습니다
+type(iris_data)
+# iris_data의 데이터 타입은 numpy의 ndarray인 것을 확인할 수 있음
+
+iris_df = pd.DataFrame(data=iris_data, columns=iris.feature_names)
+# 150개 데이터가 각각 4개의 정보를 가지고 있던 iris_data를 
+# iris.feature_names을 컬럼명으로 하는 DataFrame 자료형으로 변환해서 iris_df 변수에 저장
+# (원래 iris_data는 배열(np.array) 자료형이었음!)
+iris_df
+
+[25]:
+sepal length (cm)	sepal width (cm)	petal length (cm)	petal width (cm)
+0	5.1	3.5	1.4	0.2
+1	4.9	3.0	1.4	0.2
+2	4.7	3.2	1.3	0.2
+3	4.6	3.1	1.5	0.2
+4	5.0	3.6	1.4	0.2
+...	...	...	...	...
+145	6.7	3.0	5.2	2.3
+146	6.3	2.5	5.0	1.9
+147	6.5	3.0	5.2	2.0
+148	6.2	3.4	5.4	2.3
+149	5.9	3.0	5.1	1.8
+150 rows × 4 columns
+
+DataFrame 을 만들면서 data에는 iris_data를 넣어주고, 각 컬럼에는 feature_names로 이름을 붙여주었습니다.
+한 가지 더, 정답 데이터도 함께 있다면 데이터를 다루기 더 편리하겠죠. label이라는 컬럼을 추가해주겠습니다.
+iris_df["label"] = iris.target
+# iris_df에 label이라는 컬럼을 새로 추가
+# 150개의 숫자로 이루어져 있었던 iris.target를 label 컬럼에 채워넣기
+iris_df
+[27]:
+sepal length (cm)	sepal width (cm)	petal length (cm)	petal width (cm)	label
+0	5.1	3.5	1.4	0.2	0
+1	4.9	3.0	1.4	0.2	0
+2	4.7	3.2	1.3	0.2	0
+3	4.6	3.1	1.5	0.2	0
+4	5.0	3.6	1.4	0.2	0
+...	...	...	...	...	...
+145	6.7	3.0	5.2	2.3	2
+146	6.3	2.5	5.0	1.9	2
+147	6.5	3.0	5.2	2.0	2
+148	6.2	3.4	5.4	2.3	2
+149	5.9	3.0	5.1	1.8	2
+150 rows × 5 columns
+0, 1, 2와 같이 표현된 label 데이터는 머신러닝 모델에게 정답지라고 할 수 있습니다.
+이제 모델을 학습시켜보려하는데 필요한것이 있다.바로 학습에 사용하는 training dataset과 모델의 성능을 평가하는 데 사용하는 test dataset으로 데이터셋을 나누는 작업이 필요하죠.
+  sklearn.model_selection 패키지의 train_test_split을 활용하여, 다음과 같이 training dataset과 test dataset을 간단히 분리해 봅시다.
+
+from sklearn.model_selection import train_test_split
+# sklearn model_selection패키지의 train_test_split 함수를 임포트
+
+X_train, X_test, y_train, y_test = train_test_split(iris_data, 
+                                                    iris_label, 
+                                                    test_size=0.2, 
+                                                    random_state=7)
+# 나눠야 할 데이터(문제지, X): iris_data
+# 데이터의 라벨(정답, y): iris_label
+# iris_data와 iris_label를 각각 train:test = 8:2의 비율로 잘라서 
+# X_train, X_test, y_train, y_test에 저장
+
+
+print('X_train 개수: ', len(X_train),', X_test 개수: ', len(X_test))
+# len은 배열의 길이를 출력
+
+X_train 개수:  120 , X_test 개수:  30
+
+iris 데이터셋에서는 4가지의 특징 정보가 있었다.
+
+rain_test_split의 첫 번째 파라미터인 iris_data는 문제지, 즉 feature이다.
+두 번째 파라미터인 iris_label은 모델이 맞추어야 하는 정답값, 즉 label입니다. 총 세 가지 품종이 있었다.
+ 이렇게 각 파라미터를 넣어줌으로써 우리는 학습용 데이터와 테스트용 데이터를 생성하며 각 데이터에서 4개의 feature 데이터만 있는 X, 그리고 정답 label 데이터만 있는 y를 얻을 수 있습니다.
+X 데이터셋을 머신러닝 모델에 입력하고, 그에 따라 모델이 내뱉는 품종 예측 결과를 정답인 y와 비교하며 점차 정답을 맞히도록 학습을 시킬 것입니다.
+
+세 번째 인자인 test_size로는 test dataset의 크기를 조절할 수 있습니다. 0.2는 전체의 20%를 테스트 데이터로 사용하겠다는 것을 나타냅니다.
+마지막으로 쓰인 random_state는 train 데이터와 test 데이터를 분리(split)하는데 적용되는 랜덤성을 결정합니다. 위에서 데이터를 출력했을 때 라벨이 0부터 순서대로 정렬된 것을 보셨을 겁니다.
+
+만약 이 데이터 그대로 학습용 데이터와 테스트용 데이터를 나눈다면 뒤쪽의 20%가 테스트용 데이터셋으로 만들어지기 때문에 테스트용 데이터셋은 라벨이 2인 데이터로만 구성됩니다.
+
+이런 데이터셋을 테스트용으로 사용한다면 학습이 제대로 되었는지 확인할 수가 없겠죠? 그래서 데이터를 분리할 때 랜덤으로 섞는 과정이 필요하고, random_state가 이 역할을 하게 되는 것이죠.
+
+X_train부터 y_test까지 만들어진 데이터셋을 확인
+
+X_train.shape, y_train.shape
+# train의 형상정보 확인
+((120, 4), (120,))
+
+X_test.shape, y_test.shape
+# test의 형상정보 확인
+((30, 4), (30,))
+총 150개의 데이터 중 저희가 설정한 대로 20%의 데이터는 test 데이터셋에, 나머지 80%의 데이터는 train 데이터셋에 잘 들어갔습니다.
+ 
+ y를 확인해 봅시다.
+y_train, y_test
+# label이 잘 분리되었는지 확인
+(array([2, 1, 0, 2, 1, 0, 0, 0, 0, 2, 2, 1, 2, 2, 1, 0, 1, 1, 2, 0, 0, 0,
+        2, 0, 2, 1, 1, 1, 0, 0, 0, 1, 2, 1, 1, 0, 2, 0, 0, 2, 2, 0, 2, 0,
+        1, 2, 1, 0, 1, 0, 2, 2, 1, 0, 0, 1, 2, 0, 2, 2, 1, 0, 1, 0, 2, 2,
+        0, 0, 2, 1, 2, 2, 1, 0, 0, 2, 0, 0, 1, 2, 2, 1, 1, 0, 2, 0, 0, 1,
+        1, 2, 0, 1, 1, 2, 2, 1, 2, 0, 1, 1, 0, 0, 0, 1, 1, 0, 2, 2, 1, 2,
+        0, 2, 1, 1, 0, 2, 1, 2, 1, 0]),
+ array([2, 1, 0, 1, 2, 0, 1, 1, 0, 1, 1, 1, 0, 2, 0, 1, 2, 2, 0, 0, 1, 2,
+        1, 2, 2, 2, 1, 1, 2, 2]))
+        
+위에서 확인했던 label과는 다르게 0, 1, 2가 무작위로 섞여 있는 것을 확인할 수 있습니다.
+
+
+4. 첫 번째 머신러닝 실습, 간단하고도 빠르게! (2) 첫 번째 머신러닝 모델 학습시키기
+
+머신러닝은 크게 지도학습 (Supervised Learning), 비지도 학습 (Unsupervised Learning) 이라는 두 가지로 구분됩니다
+
+ 붓꽃문제는 지도학습. 붓꽃 품종에 대한 정답이 존재하기 때문이다.
+지도학습은 다시 두 가지로 나눌 수 있는데, 바로 분류(Classification) 와 회귀(Regression) 입니다,
+붓꽃 품종 문제는 feature 데이터를 입력받으면 setosa, versicolor, virginica 세 가지 품종 중 하나로 분류해내는, 분류 문제였습니다.
+여기까지 정리가 되었으니 우리는 무슨 머신러닝 모델을 써야할지 명확해집니다. 지도학습 중에서도 분류를 할 수 있는 모델을 사용하면 되죠.
+
+분류 모델은 아주 다양하지만, 그 중 저희는 첫 번째로 Decision Tree 모델을 사용해 보도록 하겠습니다
+한국말로 의사결정나무, 데이터를 분리해나가는 모습이 나무를 뒤집어놓은 것과 같은 모양이기 때문이다.
+Decision Tree는 sklearn.tree 패키지 안에 DecisionTreeClassifier 라는 이름으로 내장되어 있습니다.
+모델을 import해서 가져오고, decision_tree 라는 변수에 모델을 저장해 보겠습니다
+실행하면
+classifier
+
+학습데이터 X_train, y_train로 의사결정나무 모델로 학습하기
+decision_tree.fit(X_train, y_train)
+ DecisionTreeClassifier(random_state=32)
+ 여기서 중요한것은 fit 곧 학습의 정보의 보편성이다. 새로운 정보가 들어 올 때 그 정보가 선별될 수 있는 기준이 되는  기존의 정보들이 타당성을 가져야 한다.
+ 
+ 5.첫 번째 머신러닝 실습, 간단하고도 빠르게! (3) 첫 번째 머신러닝 모델 평가하기
+ 
+ 
+ # 테스트데이터 X_test로 예측하기
+y_pred = decision_tree.predict(X_test)
+y_pred
+array([2, 1, 0, 1, 2, 0, 1, 1, 0, 1, 2, 1, 0, 2, 0, 2, 2, 2, 0, 0, 1, 2,
+       1, 1, 2, 2, 1, 1, 2, 2])
+       
+ X_test 데이터에는 정답인 label이 없고 feature 데이터만 존재했습니다. 따라서 학습이 완료된 decision_tree 모델에 X_test 데이터로 predict를 실행하면 모델이 예측한 y_pred을 얻게 됩니다.
+
+모델은 총 30개의 데이터에 대해 [2, 1, ...] 라는 예측 결과를 내놓았군요. 실제 정답인 y_test와 비교해서 얼마나 맞았는지 확인해봅시다.
+
+
+ 성능을 평가하는 방법에도 다양한 척도가 있는데, 그 중 정확도(Accuracy) 를 간단히 확인해 보겠습니다.
+ 실제 정답 y_test과 예측값 y_pred 비교하여 정확도 측정하기
+from sklearn.metrics import accuracy_score
+약 0.9이라는 수치가 나왔군요. 이는 90% 정도의 정확도를 보인다는 뜻입니다.
+
+정확도는 전체 개수 중 맞은 것의 개수 의 수치를 나타냅니다. 다음과 같은 식으로 나타낼 수 있죠.
+우리의 모델은 30개의 데이터에 대해 예측을 했으니, 그 중 맞은 것은 30 * 0.9 = 27 개라는 것을 역추적해 볼 수 있습니다. 즉 30개 중 27개는 옳은 카테고리로, 3개는 틀린 카테고리로 분류를 했나봅니다.
+
+
+7. 첫 번째 머신러닝 실습, 간단하고도 빠르게! (4) 다른 모델도 해 보고 싶다면? 코드 한 줄만 바꾸면 돼!
+
+첫 번째 모델을 학습도 시켜보고, 성능도 평가해봤으니 이제는 다른 모델 활용해보자
+
+Random Forest
+
+이 외에 간단히 활용해 볼 수 있는 모델들을 만나보겠습니다. 먼저, Decision Tree를 여러 개 모아놓은 Random Forest입니다.
+
+
+이전 스텝에서 Random Forest는 Decision Tree 모델을 여러 개 합쳐놓음으로써 Decision Tree의 단점을 극복한 모델이라고 소개했죠. 이러한 기법을 앙상블(Ensemble) 기법이라고 합니다. 단일 모델을 여러 개 사용하는 방법을 취함으로써 모델 한 개만 사용할 때의 단점을 집단지성으로 극복하는 개념이죠. 아래 참고 자료는 텐서플로우 허브를 사용하였습니다.
+
+Random Forest의 Forest를 알아봅시다! Forest, 숲은 무엇으로 이루어져 있을까요? 나무입니다. 수많은 나무가 한군데 어우러져 비로소 울창한 숲을 만드는 것이죠. 마찬가지로 Random Forest의 숲은 수많은 의사 결정 트리가 모여서 생성됩니다.
+
+예를 들어 건강 위험도를 예측하려면 성별, 키, 몸무게 세 가지 요소보다 더 많은 요소를 고려하는 것이 바람직할 것입니다. 거주지역, 운동량, 기초 대사량, 근육량 등 수많은 요소도 건강에 큰 영향을 미칩니다. 다른 요소들의 조합으로 두 번째 의사 결정 트리를 생성할 수도 있습니다. 성별, 키, 흡연 여부, 근육량으로 두 번째 트리를 만들고, 키, 거주지역, 운동량으로 세 번째 트리를 만들 수도 있겠지요. (통계적으로는 독립 조건을 만들어 주기 위함입니다.)
+
+이렇게 많은 의사 결정 트리로 ‘숲’을 만들었는데, 의견 통합이 되지 않는다면 어떻게 해야 할까요? 이 역시 현실과 비슷합니다. 의견 통합이 이루어지지 않을 경우 다수결의 원칙을 따르듯이, 저희의 의사 결정 ‘숲'도 투표로 결정을 내리게 됩니다. 1,000개의 의사 결정 트리 중 678개의 트리가 건강 위험도가 높다고 의견을 내고, 나머지는 위험도가 낮다는 의견을 냈을 경우, 숲은 그 의견들을 통합하여 건강 위험도가 높다고 하는 것이죠. 데이터 사이언스에서는 이렇게 의견을 통합하거나 여러가지 결과를 합치는 방식을 “앙상블” (Ensemble method) 이라고 합니다.
+
+그럼 마지막으로, Random Forest의 Random은 무엇이 무작위적이라는 것일까요? Random Forest는 각각의 의사 결정 트리를 만드는데 있어 쓰이는 요소들 (흡연 여부, 나이, 등등)을 무작위적으로 선정합니다. 건강 위험도를 30개의 요소로 설명할 수 있으면, 의사 결정 트리의 한 단계를 생성하면서 모든 요소들을 고려하지 않습니다. 30개 중 무작위로 일부만 선택하여, 그 선택된 일부 중 가장 건강 위험도를 알맞게 예측하는 한 가지 요소가 의사 결정 트리의 한 단계가 됩니다.
+
+다음은 Random Forest가 완성되는 과정입니다.
+
+건강의 위험도를 예측하기 위해서는 많은 요소를 고려 성별, 키, 몸무게, 지역, 운동량, 흡연유무, 음주 여부, 혈당, 근육량, 기초 대사량 등 수많은 요소가 필요. Feature가 30개라 했을 때 30개의 Feature를 기반으로 하나의 결정 트리를 만든다면 트리의 가지가 많아질 것이고, 이는 오버피팅의 결과를 야기
+30개의 Feature 중 랜덤으로 5개의 Feature만 선택해서 하나의 결정 트리 생성
+계속 반복하여 여러 개의 결정 트리 생성
+여러 결정 트리들이 내린 예측 값들 중 가장 많이 나온 값을 최종 예측값으로 지정
+이렇게 의견을 통합하거나 여러 가지 결과를 합치는 방식을 앙상블(Ensemble)이라고 함
+하나의 거대한 (깊이가 깊은) 결정 트리를 만드는 것이 아니라 여러 개의 작은 결정 트리를 만드는 것
+
+from sklearn.ensemble import RandomForestClassifier #랜덤포레스트라는 분류기를 사용하기 위해 import
+
+X_train, X_test, y_train, y_test = train_test_split(iris_data, # iris 데이터의 data 컬럼
+                                                    iris_label, # iris 데이터의 target 컬럼
+                                                    test_size=0.2, # test_size : train data와 test data를 몇대몇으로 나눌지 정하는 옵션
+                                                    random_state=21) # random_state : 랜덤 패턴의 값을 지정
+
+random_forest = RandomForestClassifier(random_state=32) # RandomForest분류기 객체를 생성
+random_forest.fit(X_train, y_train) # 훈련
+y_pred = random_forest.predict(X_test) # 예측
+
+print(classification_report(y_test, y_pred)) # 결과 지표를 확인
+
+
+    precision    recall  f1-score   support
+
+           0       1.00      1.00      1.00        11
+           1       1.00      0.83      0.91        12
+           2       0.78      1.00      0.88         7
+
+    accuracy                           0.93        30
+   macro avg       0.93      0.94      0.93        30
+weighted avg       0.95      0.93      0.93        30
+
+
+
+3. 회고
+ 회고랄 것도 없다 어려워서 카피하는데 그쳤다. 카피도 양이많아 다 못했다.
+처음에는 대략이라도 앞뒤 연결고리를 가지고 차례대로 정리하려고 하였으나 그마저도 나에게는 힘겨운 일이라는 것을 알았다. 단지 조금 익숙해지는 언어들과 내가 알고자하는 어떤 대략의 개념들이 조금 조금 다가오고 있는 듯 하다는 것에 동력을 얻고자 한다.
+
+
+ 
+ 
+
